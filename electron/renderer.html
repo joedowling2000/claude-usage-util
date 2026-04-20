@@ -1,0 +1,155 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    background: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    -webkit-user-select: none;
+    -webkit-app-region: drag;
+    color: #eaeaea;
+    overflow: hidden;
+  }
+  .pill {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 8px 12px;
+    margin: 4px;
+    background: rgba(22, 22, 24, 0.82);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+    transition: background-color 400ms ease, border-color 400ms ease, box-shadow 400ms ease;
+  }
+  .pill.lvl-green {
+    background: rgba(30, 82, 48, 0.78);
+    border-color: rgba(110, 220, 140, 0.28);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35), 0 0 0 1px rgba(90,200,120,0.12) inset;
+  }
+  .pill.lvl-amber {
+    background: rgba(120, 78, 20, 0.82);
+    border-color: rgba(255, 190, 90, 0.32);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,180,70,0.14) inset;
+  }
+  .pill.lvl-red {
+    background: rgba(130, 34, 34, 0.85);
+    border-color: rgba(255, 120, 120, 0.38);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.40), 0 0 0 1px rgba(255,100,100,0.18) inset;
+  }
+  .row { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .brand {
+    font-family: "Copernicus", "Tiempos Headline", "Source Serif Pro", "Iowan Old Style", Georgia, serif;
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.2px;
+    color: #D97757;
+    margin-bottom: 1px;
+  }
+  .seg { display: inline-flex; align-items: center; gap: 4px; }
+  .emoji { font-size: 12px; }
+  .val { font-variant-numeric: tabular-nums; }
+  .sep { color: rgba(255,255,255,0.28); }
+  .reset { font-size: 11px; color: rgba(255,255,255,0.55); font-variant-numeric: tabular-nums; margin-left: 2px; }
+  .detail { font-size: 11px; color: rgba(255,255,255,0.78); font-variant-numeric: tabular-nums; }
+  .detail .lbl { color: rgba(255,255,255,0.55); }
+  .warn { color: #ff8a5b; }
+  .err  { color: #ff6b6b; font-size: 12px; }
+  .loading { opacity: 0.6; }
+</style>
+</head>
+<body>
+  <div class="pill loading" id="pill" title="Click to open usage page">
+    <span id="content">Claude…</span>
+  </div>
+<script>
+  const pill = document.getElementById('pill');
+  const content = document.getElementById('content');
+
+  pill.addEventListener('click', () => window.api.openUsage());
+  pill.addEventListener('contextmenu', (e) => { e.preventDefault(); window.api.refresh(); });
+
+  function level(v) {
+    if (v == null) return null;
+    if (v >= 81) return 'red';
+    if (v >= 51) return 'amber';
+    return 'green';
+  }
+
+  function setPillLevel(cls) {
+    pill.classList.remove('lvl-green', 'lvl-amber', 'lvl-red');
+    if (cls) pill.classList.add('lvl-' + cls);
+  }
+
+  function worst(a, b) {
+    const order = { green: 0, amber: 1, red: 2 };
+    const la = level(a), lb = level(b);
+    if (la == null) return lb;
+    if (lb == null) return la;
+    return order[la] >= order[lb] ? la : lb;
+  }
+
+  function fmtMoney(cents, cur) {
+    // Claude returns credits in cents (int). 7029 => $70.29
+    const dollars = (Number(cents) || 0) / 100;
+    const str = dollars.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (cur === 'USD') return '$' + str;
+    return str + ' ' + (cur || '');
+  }
+
+  window.api.onUsage((d) => {
+    pill.classList.remove('loading');
+    if (d.state === 'login') {
+      setPillLevel(null);
+      content.innerHTML = `<span class="warn">Log in to Claude…</span>`;
+      return;
+    }
+    if (d.state === 'error') {
+      setPillLevel(null);
+      content.innerHTML = `<span class="err">⚠️ ${String(d.message).slice(0,40)}</span>`;
+      return;
+    }
+    const s = d.session, w = d.week;
+    const lvl = worst(s, w);
+    setPillLevel(lvl);
+
+    const brand = `<div class="brand">Claude</div>`;
+
+    const mainRow = `
+      <div class="row">
+        <span class="seg" title="5h session"><span class="emoji">⚡</span><span class="val">${s ?? '–'}%</span></span>
+        <span class="reset">(${d.sessionResetsIn || '–'})</span>
+        <span class="sep">·</span>
+        <span class="seg" title="7d weekly · resets in ${d.weekResetsIn}"><span class="emoji">📅</span><span class="val">${w ?? '–'}%</span></span>
+      </div>`;
+
+    let detailRow = '';
+    if (s != null && s >= 81 && d.extra) {
+      const used = Number(d.extra.used) || 0;
+      const limit = Number(d.extra.limit) || 0;
+      const cur = d.extra.currency || 'USD';
+      const balance = Math.max(0, limit - used); // remaining credit pool (cents)
+      const over = used > limit ? used - limit : 0;
+      const limitLine = over > 0
+        ? `<span class="lbl">Spend limit</span> ${fmtMoney(limit, cur)} <span class="lbl">(over by ${fmtMoney(over, cur)})</span>`
+        : `<span class="lbl">Monthly spend limit remaining</span> ${fmtMoney(balance, cur)} / ${fmtMoney(limit, cur)}`;
+      detailRow = `
+        <div class="detail"><span class="lbl">Current balance</span> ${fmtMoney(balance, cur)}</div>
+        <div class="detail">${limitLine}</div>`;
+    }
+
+    content.innerHTML = brand + mainRow + detailRow;
+  });
+</script>
+</body>
+</html>

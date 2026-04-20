@@ -1,0 +1,25 @@
+{
+  "name": "claude-pulse",
+  "version": "0.1.0",
+  "description": "Tiny always-on-top macOS widget showing Claude.ai plan usage.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac --arm64"
+  },
+  "author": "joe",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.joe.claudeusagewidget",
+    "productName": "Claude Usage",
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": ["dir"]
+    },
+    "files": ["main.js", "preload.js", "renderer.html", "package.json"]
+  }
+}
