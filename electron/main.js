@@ -16,8 +16,8 @@ let logoDataUri = null;
 
 function createWidget() {
   widgetWin = new BrowserWindow({
-    width: 320,
-    height: 96,
+    width: 240,
+    height: 130,
     x: 40,
     y: 60,
     frame: false,
