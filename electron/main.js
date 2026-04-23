@@ -14,12 +14,36 @@ let logoDataUri = null;
 
 // ---------- windows ----------
 
+function getPositionStore() {
+  return path.join(app.getPath('userData'), 'window-position.json');
+}
+
+function loadPosition() {
+  try {
+    const fs = require('fs');
+    const raw = fs.readFileSync(getPositionStore(), 'utf8');
+    const p = JSON.parse(raw);
+    if (Number.isFinite(p.x) && Number.isFinite(p.y)) return p;
+  } catch {}
+  return null;
+}
+
+function savePosition() {
+  if (!widgetWin || widgetWin.isDestroyed()) return;
+  try {
+    const fs = require('fs');
+    const [x, y] = widgetWin.getPosition();
+    fs.writeFileSync(getPositionStore(), JSON.stringify({ x, y }));
+  } catch {}
+}
+
 function createWidget() {
+  const saved = loadPosition();
   widgetWin = new BrowserWindow({
     width: 240,
     height: 130,
-    x: 40,
-    y: 60,
+    x: saved ? saved.x : 40,
+    y: saved ? saved.y : 60,
     frame: false,
     transparent: true,
     resizable: false,
@@ -37,6 +61,14 @@ function createWidget() {
   widgetWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   widgetWin.loadFile(path.join(__dirname, 'renderer.html'));
   widgetWin.once('ready-to-show', () => widgetWin.show());
+
+  // Debounced save on move
+  let moveTimer = null;
+  widgetWin.on('move', () => {
+    clearTimeout(moveTimer);
+    moveTimer = setTimeout(savePosition, 400);
+  });
+  widgetWin.on('close', savePosition);
 }
 
 function openLoginWindow(onDone) {

@@ -29,8 +29,8 @@
     font-size: 13px;
     font-weight: 500;
     letter-spacing: 0.2px;
-    cursor: pointer;
-    -webkit-app-region: no-drag;
+    cursor: grab;
+    -webkit-app-region: drag;
     transition: background-color 400ms ease, border-color 400ms ease, box-shadow 400ms ease;
   }
   .pill.lvl-green {
@@ -86,14 +86,15 @@
 </style>
 </head>
 <body>
-  <div class="pill loading" id="pill" title="Click to open usage page">
+  <div class="pill loading" id="pill" title="Drag to reposition · Double-click to open usage page · Right-click to refresh">
     <span id="content">Claude…</span>
   </div>
 <script>
   const pill = document.getElementById('pill');
   const content = document.getElementById('content');
 
-  pill.addEventListener('click', () => window.api.openUsage());
+  // Whole pill is a drag region; use dblclick to open usage and contextmenu for refresh.
+  pill.addEventListener('dblclick', () => window.api.openUsage());
   pill.addEventListener('contextmenu', (e) => { e.preventDefault(); window.api.refresh(); });
 
   function level(v) {
