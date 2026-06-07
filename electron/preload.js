@@ -4,4 +4,5 @@ contextBridge.exposeInMainWorld('api', {
   onUsage: (cb) => ipcRenderer.on('usage', (_e, data) => cb(data)),
   openUsage: () => ipcRenderer.invoke('open-usage'),
   refresh: () => ipcRenderer.invoke('request-refresh'),
+  quit: () => ipcRenderer.invoke('quit-widget'),
 });

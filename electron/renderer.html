@@ -18,7 +18,7 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 3px;
-    padding: 8px 42px 8px 12px; /* extra right padding to avoid text under the Pro badge */
+    padding: 8px 58px 8px 12px; /* extra right padding to avoid text under the Pro badge */
     margin: 4px;
     background: rgba(22, 22, 24, 0.82);
     backdrop-filter: blur(18px) saturate(160%);
@@ -61,7 +61,7 @@
   .badge {
     position: absolute;
     top: 10px;
-    right: 12px;
+    right: 30px;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     font-size: 10px;
     font-weight: 600;
@@ -83,19 +83,48 @@
   .warn { color: #ff8a5b; }
   .err  { color: #ff6b6b; font-size: 12px; }
   .loading { opacity: 0.6; }
+  .close {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.72);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+  }
+  .close:hover {
+    background: rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.95);
+  }
 </style>
 </head>
 <body>
   <div class="pill loading" id="pill" title="Drag to reposition · Double-click to open usage page · Right-click to refresh">
+    <button class="close" id="close" type="button" aria-label="Quit Claude usage widget">&times;</button>
     <span id="content">Claude…</span>
   </div>
 <script>
   const pill = document.getElementById('pill');
   const content = document.getElementById('content');
+  const closeButton = document.getElementById('close');
 
   // Whole pill is a drag region; use dblclick to open usage and contextmenu for refresh.
   pill.addEventListener('dblclick', () => window.api.openUsage());
   pill.addEventListener('contextmenu', (e) => { e.preventDefault(); window.api.refresh(); });
+  closeButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.api.quit();
+  });
 
   function level(v) {
     if (v == null) return null;

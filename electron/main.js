@@ -371,6 +371,10 @@ async function pasteNewSessionKey() {
 
 ipcMain.handle('open-usage', () => shell.openExternal(USAGE_PAGE));
 ipcMain.handle('request-refresh', () => refresh());
+ipcMain.handle('quit-widget', () => {
+  savePosition();
+  app.quit();
+});
 
 // ---------- app lifecycle ----------
 
